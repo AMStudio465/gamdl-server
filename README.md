@@ -4,11 +4,14 @@ A Docker-based Node.js Express API with queue system for downloading Apple Music
 
 ## Features
 
-- ✅ Queue system (processes one download at a time)
-- ✅ RESTful API with job status tracking
-- ✅ Returns M4A file URL after download
-- ✅ Redis-backed job queue
-- ✅ Docker & Docker Compose setup
+- ✅ **Queue system** - Processes one download at a time
+- ✅ **Smart caching** - Duplicate URLs return instantly from cache
+- ✅ **Auto-cleanup** - Files automatically deleted after 3 days
+- ✅ **RESTful API** - Job status tracking and queue management
+- ✅ **Redis-backed** - Persistent job queue and cache storage
+- ✅ **Queue control** - Clear queue and force kill running processes
+- ✅ **Cache statistics** - Monitor cache usage and storage
+- ✅ **Docker ready** - Complete Docker & Docker Compose setup
 
 ## Prerequisites
 
@@ -63,12 +66,31 @@ The API will be available at `http://localhost:3000`
 }
 ```
 
-**Response:**
+**Response (Cache Miss - New Download):**
 ```json
 {
   "success": true,
   "jobId": "550e8400-e29b-41d4-a716-446655440000",
   "message": "Download request queued",
+  "cached": false,
+  "statusUrl": "/api/status/550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+**Response (Cache Hit - Instant):**
+```json
+{
+  "success": true,
+  "jobId": "550e8400-e29b-41d4-a716-446655440000",
+  "message": "Retrieved from cache",
+  "cached": true,
+  "cachedAt": "2025-11-25T01:00:00.000Z",
+  "result": {
+    "success": true,
+    "fileUrl": "http://localhost:3000/downloads/550e8400-e29b-41d4-a716-446655440000/Artist/Album/01 Song.m4a",
+    "fileName": "Artist/Album/01 Song.m4a",
+    "jobId": "550e8400-e29b-41d4-a716-446655440000"
+  },
   "statusUrl": "/api/status/550e8400-e29b-41d4-a716-446655440000"
 }
 ```
@@ -125,7 +147,56 @@ The API will be available at `http://localhost:3000`
 }
 ```
 
-### 4. Health Check
+### 4. Cache Statistics
+
+**GET** `/api/cache/stats`
+
+**Response:**
+```json
+{
+  "success": true,
+  "stats": {
+    "totalCached": 5,
+    "totalSizeBytes": 52428800,
+    "totalSizeMB": "50.00",
+    "cacheTTLDays": 3,
+    "entries": [
+      {
+        "url": "https://music.apple.com/us/album/...",
+        "fileName": "Artist/Album/01 Song.m4a",
+        "fileSize": 10485760,
+        "cachedAt": "2025-11-25T01:00:00.000Z",
+        "ttlSeconds": 259200,
+        "expiresAt": "2025-11-28T01:00:00.000Z"
+      }
+    ]
+  }
+}
+```
+
+### 5. Clear Queue
+
+**POST** `/api/queue/clear`
+
+Clears all jobs from the queue and force kills any running processes.
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Queue cleared and all processes killed",
+  "cleared": {
+    "waiting": 2,
+    "active": 1,
+    "completed": 15,
+    "failed": 0,
+    "cachedResults": 3,
+    "total": 18
+  }
+}
+```
+
+### 6. Health Check
 
 **GET** `/health`
 
@@ -141,19 +212,33 @@ The API will be available at `http://localhost:3000`
 ## Usage Example
 
 ```bash
-# Submit download
+# Submit download (first time - will download)
 curl -X POST http://localhost:3000/api/download \
   -H "Content-Type: application/json" \
   -d '{"url": "https://music.apple.com/us/album/never-gonna-give-you-up/1624945511?i=1624945512"}'
 
 # Response:
-# {"success":true,"jobId":"abc-123","message":"Download request queued","statusUrl":"/api/status/abc-123"}
+# {"success":true,"jobId":"abc-123","message":"Download request queued","cached":false,"statusUrl":"/api/status/abc-123"}
 
 # Check status
 curl http://localhost:3000/api/status/abc-123
 
 # When completed, you'll get the M4A URL:
 # {"status":"completed","result":{"fileUrl":"http://localhost:3000/downloads/abc-123/Rick Astley/Album/01 Never Gonna Give You Up.m4a"}}
+
+# Submit the SAME URL again - instant response from cache!
+curl -X POST http://localhost:3000/api/download \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://music.apple.com/us/album/never-gonna-give-you-up/1624945511?i=1624945512"}'
+
+# Response (instant):
+# {"success":true,"jobId":"abc-123","message":"Retrieved from cache","cached":true,"result":{...}}
+
+# Check cache statistics
+curl http://localhost:3000/api/cache/stats
+
+# Clear the queue if needed
+curl -X POST http://localhost:3000/api/queue/clear
 
 # Download the file
 curl -O http://localhost:3000/downloads/abc-123/Rick%20Astley/Album/01%20Never%20Gonna%20Give%20Up.m4a
