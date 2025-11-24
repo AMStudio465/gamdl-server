@@ -1,0 +1,7 @@
+node_modules/
+downloads/
+temp/
+cookies.txt
+.env
+*.log
+.DS_Store

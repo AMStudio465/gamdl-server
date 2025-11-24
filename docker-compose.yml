@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: gamdl-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+
+  api:
+    build: .
+    container_name: gamdl-api
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - BASE_URL=http://localhost:3000
+    volumes:
+      - ./cookies.txt:/app/cookies.txt:ro
+      - ./downloads:/app/downloads
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+volumes:
+  redis-data:
