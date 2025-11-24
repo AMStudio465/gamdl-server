@@ -70,8 +70,11 @@ async function cacheFilesExist(jobId, fileName) {
     }
 }
 
-// Process queue - one job at a time
-downloadQueue.process(1, async (job) => {
+// Queue concurrency - number of simultaneous downloads
+const QUEUE_CONCURRENCY = parseInt(process.env.QUEUE_CONCURRENCY || '5', 10);
+
+// Process queue - multiple jobs concurrently
+downloadQueue.process(QUEUE_CONCURRENCY, async (job) => {
     const { url, jobId } = job.data;
 
     console.log(`Processing job ${jobId} for URL: ${url}`);
@@ -498,9 +501,10 @@ app.listen(PORT, async () => {
     console.log(`📥 Submit downloads: POST /api/download`);
     console.log(`📊 Check status: GET /api/status/:jobId`);
     console.log(`📈 Queue stats: GET /api/queue/stats`);
-    console.log(`� Cache stats: GET /api/cache/stats`);
-    console.log(`�🗑️  Clear queue: POST /api/queue/clear`);
+    console.log(`💾 Cache stats: GET /api/cache/stats`);
+    console.log(`🗑️  Clear queue: POST /api/queue/clear`);
     console.log(`⏱️  Cache TTL: ${CACHE_TTL_DAYS} days`);
+    console.log(`⚡ Queue concurrency: ${QUEUE_CONCURRENCY} workers`);
 
     // Run cleanup on startup
     await cleanupOldCaches();

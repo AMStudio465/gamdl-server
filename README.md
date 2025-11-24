@@ -246,19 +246,44 @@ curl -O http://localhost:3000/downloads/abc-123/Rick%20Astley/Album/01%20Never%2
 
 ## Environment Variables
 
-You can customize these in `docker-compose.yml`:
+You can customize these in `docker-compose.yml` or `.env`:
 
 - `PORT` - API port (default: 3000)
-- `REDIS_HOST` - Redis hostname (default: redis)
+- `REDIS_HOST` - Redis hostname (default: localhost for local, redis for Docker)
 - `REDIS_PORT` - Redis port (default: 6379)
 - `BASE_URL` - Base URL for file downloads (default: http://localhost:3000)
+- `QUEUE_CONCURRENCY` - Number of simultaneous downloads (default: 5, recommended: 5-10)
+
+## Caching System
+
+The API includes an intelligent caching system that significantly improves performance:
+
+### How It Works
+- **URL-based caching**: Each unique Apple Music URL is cached after download
+- **Instant responses**: Duplicate URLs return immediately from cache (no re-download)
+- **3-day TTL**: Cache entries and files automatically expire after 3 days
+- **Smart validation**: Verifies files exist before serving cached results
+- **Automatic cleanup**: Old files are deleted on startup and after expiration
+
+### Benefits
+- ⚡ **Faster responses** - Cached downloads return in milliseconds
+- 💾 **Reduced bandwidth** - No duplicate downloads
+- 🔄 **Better UX** - Same URL always returns same result (within cache period)
+- 🧹 **Auto-management** - No manual cleanup required
+
+### Cache Monitoring
+Use `GET /api/cache/stats` to view:
+- Total cached URLs
+- Storage usage (MB)
+- Individual cache entries with expiration times
 
 ## Queue System
 
 - Uses **Bull** queue with Redis backend
-- Processes **one download at a time** to avoid overloading
+- Processes **multiple downloads concurrently** (5-10 workers) for better throughput
 - Jobs are automatically cleaned up 1 hour after completion
 - Failed jobs are retained for debugging
+- Queue can be cleared with `POST /api/queue/clear`
 
 ## Troubleshooting
 
