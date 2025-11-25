@@ -9,8 +9,8 @@ RUN apt-get update && apt-get install -y \
     wget \
     && rm -rf /var/lib/apt/lists/*
 
-# Install pipx
-RUN python3 -m pip install --user pipx
+# Install pipx (using --break-system-packages for containerized environment)
+RUN python3 -m pip install --user --break-system-packages pipx
 RUN python3 -m pipx ensurepath
 
 # Add pipx to PATH
