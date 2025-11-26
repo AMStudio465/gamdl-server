@@ -10,6 +10,7 @@ services:
 
   api:
     build: .
+    image: gamdl-api:v1.0.1
     container_name: gamdl-api
     ports:
       - "3000:3000"
