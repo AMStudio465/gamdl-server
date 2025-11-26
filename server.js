@@ -466,7 +466,7 @@ app.get('/api/cache/stats', async (req, res) => {
 // Clear queue and force kill running processes
 app.post('/api/queue/clear', async (req, res) => {
     try {
-        console.log('Clearing queue and killing active jobs...');
+        console.log('Clearing queue, cache, and killing active jobs...');
 
         // Get counts before clearing
         const [waiting, active, completed, failed] = await Promise.all([
@@ -497,17 +497,26 @@ app.post('/api/queue/clear', async (req, res) => {
         const cachedResultsCount = jobResults.size;
         jobResults.clear();
 
-        console.log('Queue cleared successfully');
+        // Clear all Redis cache entries
+        const cacheKeys = await redisClient.keys('cache:url:*');
+        let clearedCacheCount = 0;
+        if (cacheKeys.length > 0) {
+            clearedCacheCount = await redisClient.del(...cacheKeys);
+            console.log(`Cleared ${clearedCacheCount} cache entries from Redis`);
+        }
+
+        console.log('Queue and cache cleared successfully');
 
         res.json({
             success: true,
-            message: 'Queue cleared and all processes killed',
+            message: 'Queue cleared, cache cleared, and all processes killed',
             cleared: {
                 waiting,
                 active,
                 completed,
                 failed,
                 cachedResults: cachedResultsCount,
+                cacheEntries: clearedCacheCount,
                 total: waiting + active + completed + failed
             }
         });
