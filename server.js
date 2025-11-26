@@ -83,8 +83,29 @@ downloadQueue.process(QUEUE_CONCURRENCY, async (job) => {
         const outputDir = path.join(__dirname, 'downloads', jobId);
         await fs.mkdir(outputDir, { recursive: true });
 
+        // Find cookies file
+        let cookiesPath = './cookies.txt';
+        const cookieCandidates = [
+            './cookies.txt',
+            path.join(__dirname, 'cookies', 'cookies.txt'),
+            path.join(__dirname, 'config', 'cookies.txt'),
+            '/app/cookies/cookies.txt'
+        ];
+
+        for (const candidate of cookieCandidates) {
+            try {
+                const stats = await fs.stat(candidate);
+                if (stats.isFile()) {
+                    cookiesPath = candidate;
+                    break;
+                }
+            } catch (e) {
+                // Continue to next candidate
+            }
+        }
+
         // Execute gamdl command
-        const command = `gamdl "${url}" -o "${outputDir}" --cookies-path ./cookies.txt`;
+        const command = `gamdl "${url}" -o "${outputDir}" --cookies-path "${cookiesPath}"`;
 
         console.log(`Executing: ${command}`);
 

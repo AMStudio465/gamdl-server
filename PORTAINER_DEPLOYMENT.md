@@ -266,10 +266,13 @@ Monitor your deployment in Portainer:
 
 ## Troubleshooting
 
-### Container Won't Start
-
-1. Check logs in Portainer
-2. Verify `cookies.txt` is accessible
+### Container Won't Start / Cookies Error
+1. **Error: "File './cookies.txt' is a directory"**: This happens if you started the stack without the file existing on the host.
+   - **Fix**: Stop the stack, delete the `cookies.txt` *directory* on the server, create the actual file, and restart.
+2. **Flexible Cookies Path**: The app now checks multiple locations for `cookies.txt`:
+   - `./cookies.txt` (Default)
+   - `/app/cookies/cookies.txt` (Recommended for Volumes)
+   - `/app/config/cookies.txt`
 3. Ensure Redis container is running first
 
 ### Redis Connection Issues

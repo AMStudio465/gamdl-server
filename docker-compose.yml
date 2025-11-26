@@ -19,7 +19,7 @@ services:
       - REDIS_PORT=6379
       - BASE_URL=http://localhost:3000
     volumes:
-      - ./cookies.txt:/app/cookies.txt:ro
+      - ./cookies.txt:/app/cookies/cookies.txt:ro
       - ./downloads:/app/downloads
     depends_on:
       - redis
