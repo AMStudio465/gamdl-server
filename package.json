@@ -1,6 +1,6 @@
 {
     "name": "gamdl-api",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "description": "Apple Music downloader API with queue system",
     "main": "server.js",
     "scripts": {

@@ -10,7 +10,7 @@ services:
 
   api:
     build: .
-    image: gamdl-api:v1.0.3
+    image: gamdl-api:v1.0.4
     container_name: gamdl-api
     ports:
       - "3000:3000"
@@ -18,7 +18,7 @@ services:
       - PORT=3000
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - BASE_URL=http://localhost:3000
+      - BASE_URL=https://api.aplmusicdownloader.net
     volumes:
       - ./cookies.txt:/app/cookies/cookies.txt:ro
       - ./downloads:/app/downloads
