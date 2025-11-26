@@ -6,8 +6,10 @@ const { promisify } = require('util');
 const fs = require('fs').promises;
 const path = require('path');
 const cors = require('cors');
+const MusicInfoService = require('./lib/musicInfoService');
 
 const execAsync = promisify(exec);
+const musicInfoService = new MusicInfoService();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -213,6 +215,42 @@ downloadQueue.on('failed', (job, err) => {
 });
 
 // API Routes
+
+// Get music info from Apple Music URL
+app.get('/api/get-info', async (req, res) => {
+    try {
+        const { url } = req.query;
+
+        if (!url) {
+            return res.status(400).json({
+                success: false,
+                error: 'URL parameter is required'
+            });
+        }
+
+        // Validate URL
+        if (!url.includes('music.apple.com')) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid Apple Music URL'
+            });
+        }
+
+        const result = await musicInfoService.getMusicInfo(url);
+
+        if (!result.success) {
+            return res.status(404).json(result);
+        }
+
+        return res.json(result);
+    } catch (error) {
+        console.error('Error in /get-info:', error);
+        return res.status(500).json({
+            success: false,
+            error: 'Internal server error'
+        });
+    }
+});
 
 // Submit download request
 app.post('/api/download', async (req, res) => {
@@ -526,6 +564,7 @@ async function cleanupOldCaches() {
 // Start server
 app.listen(PORT, async () => {
     console.log(`🚀 GAMDL API Server running on port ${PORT}`);
+    console.log(`🎵 Get info: GET /get-info?url=<apple_music_url>`);
     console.log(`📥 Submit downloads: POST /api/download`);
     console.log(`📊 Check status: GET /api/status/:jobId`);
     console.log(`📈 Queue stats: GET /api/queue/stats`);

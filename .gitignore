@@ -4,4 +4,5 @@ temp/
 cookies.txt
 .env
 *.log
+gamdl/
 .DS_Store
