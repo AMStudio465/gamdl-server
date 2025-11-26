@@ -84,12 +84,13 @@ downloadQueue.process(QUEUE_CONCURRENCY, async (job) => {
         await fs.mkdir(outputDir, { recursive: true });
 
         // Find cookies file
-        let cookiesPath = './cookies.txt';
+        let cookiesPath = null;
         const cookieCandidates = [
-            './cookies.txt',
+            '/app/cookies/cookies.txt', // Docker volume priority
             path.join(__dirname, 'cookies', 'cookies.txt'),
+            './cookies/cookies.txt',
             path.join(__dirname, 'config', 'cookies.txt'),
-            '/app/cookies/cookies.txt'
+            './cookies.txt'
         ];
 
         for (const candidate of cookieCandidates) {
@@ -97,11 +98,17 @@ downloadQueue.process(QUEUE_CONCURRENCY, async (job) => {
                 const stats = await fs.stat(candidate);
                 if (stats.isFile()) {
                     cookiesPath = candidate;
+                    console.log(`Found cookies file at: ${cookiesPath}`);
                     break;
                 }
             } catch (e) {
                 // Continue to next candidate
             }
+        }
+
+        if (!cookiesPath) {
+            console.warn('WARNING: Could not find cookies.txt in any expected location. Defaulting to ./cookies.txt');
+            cookiesPath = './cookies.txt';
         }
 
         // Execute gamdl command
